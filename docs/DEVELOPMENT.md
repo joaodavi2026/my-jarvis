@@ -23,3 +23,16 @@ Node 20+, Rust (toolchain MSVC) + VS Build Tools, WebView2, Python 3.13, Git. Ne
 ## Execução e testes
 
 Os comandos concretos são adicionados junto de cada fase (Python: `pytest`; TS: `vitest`; Rust: `cargo test`).
+
+## Python (serviço)
+
+```
+py -3.13 -m venv %LOCALAPPDATA%\JARVIS\venv          (venv no SSD, fora do exFAT)
+%LOCALAPPDATA%\JARVIS\venv\Scripts\python -m pip install pytest pytest-asyncio
+cd service && %LOCALAPPDATA%\JARVIS\venv\Scripts\python -m pytest
+```
+
+Diagnóstico de armazenamento (somente leitura por padrão):
+`python scripts/storage_check.py --internal-root <pasta>`; `--bind <guid>` adota o volume (cria a raiz de runtime).
+
+Nota: o app desktop do Claude virtualiza `%LOCALAPPDATA%` em alguns caminhos; o JARVIS instalado não é afetado.
