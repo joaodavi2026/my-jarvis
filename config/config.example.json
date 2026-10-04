@@ -1,26 +1,16 @@
 {
-  "_comment": "Template. Copy to config.json (git-ignored) or let JARVIS create it in %LOCALAPPDATA%\JARVIS. Never put secrets here.",
+  "_comment": "Template only. The real file lives in the internal SSD folder (config/config.json) and is never committed. Never put secrets here.",
   "storage": {
     "external": {
       "volume_label": "HD JD",
       "volume_guid": null,
       "preferred_drive": "D:",
+      "filesystem": null,
       "root_dir": "JARVIS"
     },
-    "categories": {
-      "models": "external",
-      "memory_large": "external",
-      "personal_data": "external",
-      "documents": "external",
-      "logs": "external",
-      "backups": "external",
-      "core": "internal",
-      "config": "internal",
-      "database": "internal",
-      "fast_cache": "internal"
-    },
-    "fast_cache_limit_gb": 2,
+    "categories": {},
     "low_space_warn_gb": 20,
-    "low_space_critical_gb": 5
+    "low_space_critical_gb": 5,
+    "fast_cache_limit_gb": 2
   }
 }
