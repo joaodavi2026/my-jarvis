@@ -1,0 +1,18 @@
+.panel { box-sizing: border-box; height: 100%; padding: 16px 18px; background: var(--panel-bg);
+  border: 1px solid rgba(26, 167, 255, 0.45); border-radius: 18px; overflow: auto;
+  box-shadow: 0 0 24px rgba(26, 167, 255, 0.25) inset; }
+header { display: flex; align-items: center; justify-content: space-between; -webkit-app-region: drag; }
+h1 { margin: 0; font-size: 18px; letter-spacing: 0.3em; color: var(--blue-hot); font-weight: 600; }
+h2 { margin: 16px 0 6px; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #7fa6c4; }
+.state { font-size: 11px; letter-spacing: 0.12em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--blue-core); color: var(--blue-hot); }
+.state[data-state="ERROR"] { border-color: var(--coral); color: var(--coral); }
+.state[data-state="OFFLINE"] { border-color: #6b7a8c; color: #8da0b3; }
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 13px; }
+.rows b { font-weight: 500; color: var(--blue-hot); font-size: 12px; }
+.hint { font-size: 12px; color: #8da0b3; margin: 4px 0 8px; }
+.grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.grid button { all: unset; cursor: pointer; font-size: 11px; padding: 5px 10px; border-radius: 8px;
+  border: 1px solid rgba(26, 167, 255, 0.5); color: var(--ink); }
+.grid button:hover { background: rgba(26, 167, 255, 0.18); }
+.grid button.on { background: rgba(26, 167, 255, 0.35); }

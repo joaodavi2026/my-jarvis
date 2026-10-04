@@ -1,0 +1,14 @@
+:root {
+  --blue-core: #1aa7ff;
+  --blue-hot: #7fe3ff;
+  --blue-deep: #0a4fd6;
+  --amber: #ffd166;
+  --coral: #ff6b81;
+  --ink: #e8f6ff;
+  --panel-bg: rgba(8, 18, 36, 0.86);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body, #root { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body { user-select: none; -webkit-user-select: none; color: var(--ink); }
+button { font: inherit; }
