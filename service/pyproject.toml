@@ -1,0 +1,15 @@
+[project]
+name = "jarvis-service"
+version = "0.1.0"
+description = "JARVIS local service (storage, IPC, and future audio/AI/tools)"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=9,<10", "pytest-asyncio>=1.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+addopts = "-q"
