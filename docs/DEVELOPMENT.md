@@ -36,3 +36,11 @@ Diagnóstico de armazenamento (somente leitura por padrão):
 `python scripts/storage_check.py --internal-root <pasta>`; `--bind <guid>` adota o volume (cria a raiz de runtime).
 
 Nota: o app desktop do Claude virtualiza `%LOCALAPPDATA%` em alguns caminhos; o JARVIS instalado não é afetado.
+
+## Bloqueio conhecido: Smart App Control e o compilador Rust
+
+Em máquinas com o **Smart App Control** ativo, o Windows pode impedir o `rustc.exe` de carregar o `std-*.dll` (não assinado): `rustc -vV` falha com o código `0xC0E90002` e o Code Integrity registra o evento 3077. Sem um compilador Rust funcional não é possível compilar o shell Tauri (`app/src-tauri`). Alterar essa configuração de segurança é decisão do usuário (e o Smart App Control, uma vez desligado, não pode ser religado sem reinstalar o Windows). Enquanto isso, o frontend (`npm test`) e o serviço Python (`pytest`) são desenvolvidos e testados normalmente.
+
+## Serviço Python (Phase 5)
+
+`python -m jarvis` (executar a partir de `service/src`, ou com `PYTHONPATH`): lê o token da primeira linha do stdin, imprime uma linha JSON `{"ready":true,"port":N,"protocol":1}` no stdout e encerra quando o stdin fecha. Dependência de runtime: `websockets` (BSD-3, local, sem custo/API key).
