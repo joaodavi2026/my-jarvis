@@ -1,5 +1,5 @@
 // Launches the real Electron app (stock electron.exe) with the real Python service and reads its trace.
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import * as fs from "node:fs";
 import { createRequire } from "node:module";
@@ -75,4 +75,18 @@ export async function waitUntilDead(pid: number, timeoutMs: number): Promise<boo
     await new Promise((r) => setTimeout(r, 100));
   }
   return !isAlive(pid);
+}
+
+/** PIDs of the direct children of `pid` (the venv launcher spawns the real interpreter). */
+export function childPids(pid: number): number[] {
+  try {
+    const out = execFileSync(
+      "powershell",
+      ["-NoProfile", "-Command", "(Get-CimInstance Win32_Process -Filter 'ParentProcessId=" + pid + "').ProcessId"],
+      { encoding: "utf8", windowsHide: true },
+    );
+    return out.split(String.fromCharCode(10)).map((l) => Number(l.trim())).filter((n) => Number.isInteger(n) && n > 0);
+  } catch {
+    return [];
+  }
 }

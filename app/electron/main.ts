@@ -11,7 +11,7 @@ import { isCorner } from "./placement";
 import { loadPrefs, savePrefs } from "./prefs";
 import type { Prefs } from "./prefs";
 import { snapshotAllStates } from "./devtools";
-import { ServiceSupervisor } from "./supervisor";
+import { killTree, ServiceSupervisor } from "./supervisor";
 import type { ReadyInfo } from "./supervisor";
 import { assetPath, createOrbWindow, createPanelWindow, OrbDragger, placeOrb } from "./windows";
 
@@ -252,7 +252,7 @@ function startService(): void {
     if (process.env.JARVIS_E2E_AUTOQUIT === "1") setTimeout(() => void shutdown("e2e"), 3000);
     return;
   }
-  supervisor = new ServiceSupervisor({ launch });
+  supervisor = new ServiceSupervisor({ launch, killFn: killTree });
   supervisor.on("ready", (info: ReadyInfo) => {
     trace("service_ready", { port: info.port, pid: info.pid });
     void connectToService(info);

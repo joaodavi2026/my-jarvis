@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { isAlive, launchApp, waitUntilDead } from "./harness";
+import { childPids, isAlive, launchApp, waitUntilDead } from "./harness";
 import type { RunningApp } from "./harness";
 
 const apps: RunningApp[] = [];
@@ -22,6 +22,9 @@ const MILESTONE = { JARVIS_E2E_SCRIPT: "1" };
 describe("JARVIS milestone: Windows -> Electron shell -> orb -> Python -> IPC -> events -> orb -> clean shutdown", () => {
   it("runs the whole chain for real and shuts down cleanly without orphans", async () => {
     const app = start({ ...MILESTONE, JARVIS_E2E_AUTOQUIT: "1" });
+    const spawnedPid = (await app.waitFor("service_spawned")).pid as number;
+    const tree = [spawnedPid, ...childPids(spawnedPid)]; // launcher + real interpreter
+    expect(tree.length, "venv launcher + real interpreter").toBeGreaterThanOrEqual(2);
     const code = await Promise.race([app.exited, new Promise<null>((r) => setTimeout(() => r(null), 100_000))]);
     const trace = app.trace();
     const names = trace.map((l) => l.ev);
@@ -60,6 +63,7 @@ describe("JARVIS milestone: Windows -> Electron shell -> orb -> Python -> IPC ->
     expect(pyExit.code).toBe(0);
     expect(code).toBe(0);
     expect(isAlive(spawned.pid as number)).toBe(false);
+    for (const pid of tree) expect(isAlive(pid), "process " + pid + " should be gone").toBe(false);
 
     // 6. the session token never reaches the trace (64 hex chars would be a token)
     expect(JSON.stringify(trace)).not.toMatch(/[0-9a-f]{64}/);
@@ -69,9 +73,10 @@ describe("JARVIS milestone: Windows -> Electron shell -> orb -> Python -> IPC ->
     const app = start(MILESTONE);
     await app.waitFor("script_done");
     const pid = app.find("service_spawned")!.pid as number;
+    const tree = [pid, ...childPids(pid)];
     expect(isAlive(pid)).toBe(true);
     app.child.kill(); // hard kill of the Electron main process: no chance to run any shutdown code
-    expect(await waitUntilDead(pid, 15_000)).toBe(true);
+    for (const id of tree) expect(await waitUntilDead(id, 15_000), "process " + id + " should be gone").toBe(true);
   });
 
   it("shows OFFLINE honestly when the Python service cannot be started", async () => {

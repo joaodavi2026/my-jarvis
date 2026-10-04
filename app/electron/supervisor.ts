@@ -4,7 +4,7 @@
 // The token lives only in memory: not in argv, not in env, not in logs, not on disk.
 import { randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { spawn as nodeSpawn } from "node:child_process";
+import { spawn as nodeSpawn, spawnSync } from "node:child_process";
 import type { Readable, Writable } from "node:stream";
 import type { ServiceLaunch } from "./launch";
 
@@ -25,6 +25,8 @@ export type SupervisorState = "STOPPED" | "STARTING" | "READY" | "BACKOFF" | "ST
 export interface SupervisorOptions {
   launch: ServiceLaunch;
   spawnFn?: SpawnFn;
+  /** How to force-kill the service. Production uses killTree (the venv launcher spawns the real interpreter). */
+  killFn?: (child: ChildLike) => void;
   readyTimeoutMs?: number;
   stopGraceMs?: number;
   backoffMs?: number[];
@@ -35,6 +37,18 @@ export interface ReadyInfo {
   port: number;
   token: string;
   pid: number;
+}
+
+/** Windows: the venv python.exe is a launcher whose child is the real interpreter, so kill the whole tree. */
+export function killTree(child: ChildLike): void {
+  if (process.platform === "win32" && child.pid) {
+    try {
+      spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+    } catch {
+      /* fall through to the plain kill */
+    }
+  }
+  child.kill();
 }
 
 const defaultSpawn: SpawnFn = (command, args, options) =>
@@ -48,7 +62,7 @@ export class ServiceSupervisor extends EventEmitter {
   private generation = 0;
   private readyTimer: NodeJS.Timeout | null = null;
   private restartTimer: NodeJS.Timeout | null = null;
-  private readonly opts: Required<Omit<SupervisorOptions, "launch" | "spawnFn">> & { launch: ServiceLaunch; spawnFn: SpawnFn };
+  private readonly opts: Required<Omit<SupervisorOptions, "launch" | "spawnFn" | "killFn">> & { launch: ServiceLaunch; spawnFn: SpawnFn; killFn: (child: ChildLike) => void };
 
   constructor(options: SupervisorOptions) {
     super();
@@ -58,6 +72,7 @@ export class ServiceSupervisor extends EventEmitter {
       backoffMs: [1_000, 2_000, 4_000, 8_000, 16_000],
       maxAttempts: 5,
       spawnFn: defaultSpawn,
+      killFn: (child: ChildLike) => void child.kill(),
       ...options,
     };
   }
@@ -129,7 +144,7 @@ export class ServiceSupervisor extends EventEmitter {
       this.emit("log", "service did not report ready in time; stopping it");
       const stuck = this.child;
       this.onDown(generation, "timeout", null); // record the real reason first: kill() emits an exit event
-      stuck?.kill();
+      if (stuck) this.opts.killFn(stuck);
     }, this.opts.readyTimeoutMs);
   }
 
@@ -194,14 +209,14 @@ export class ServiceSupervisor extends EventEmitter {
         resolve();
       };
       const grace = setTimeout(() => {
-        child.kill();
+        this.opts.killFn(child);
         setTimeout(finish, 500);
       }, this.opts.stopGraceMs);
       child.on("exit", finish);
       try {
         child.stdin?.end();
       } catch {
-        child.kill();
+        this.opts.killFn(child);
       }
     });
   }
