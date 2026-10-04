@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "description": "Interaction state machine of JARVIS. Authoritative in the Python service; mirrored by the UI.",
+  "initial": "BOOTING",
+  "states": ["BOOTING", "IDLE", "ACTIVATED", "LISTENING", "PROCESSING", "EXECUTING", "AWAITING_CONFIRMATION", "SPEAKING", "CANCELLED", "ERROR", "OFFLINE"],
+  "transient": ["ACTIVATED", "CANCELLED", "ERROR"],
+  "transitions": [
+    {"from": "BOOTING", "on": "boot_completed", "to": "IDLE"},
+    {"from": "BOOTING", "on": "boot_failed", "to": "ERROR"},
+    {"from": "IDLE", "on": "activation_requested", "to": "ACTIVATED"},
+    {"from": "ACTIVATED", "on": "listening_started", "to": "LISTENING"},
+    {"from": "LISTENING", "on": "transcription_ready", "to": "PROCESSING"},
+    {"from": "LISTENING", "on": "no_speech", "to": "IDLE"},
+    {"from": "PROCESSING", "on": "tool_started", "to": "EXECUTING"},
+    {"from": "PROCESSING", "on": "confirmation_requested", "to": "AWAITING_CONFIRMATION"},
+    {"from": "PROCESSING", "on": "response_ready", "to": "SPEAKING"},
+    {"from": "PROCESSING", "on": "response_silent", "to": "IDLE"},
+    {"from": "EXECUTING", "on": "tool_completed", "to": "PROCESSING"},
+    {"from": "EXECUTING", "on": "response_ready", "to": "SPEAKING"},
+    {"from": "EXECUTING", "on": "confirmation_requested", "to": "AWAITING_CONFIRMATION"},
+    {"from": "AWAITING_CONFIRMATION", "on": "confirmation_answered", "to": "PROCESSING"},
+    {"from": "AWAITING_CONFIRMATION", "on": "confirmation_timeout", "to": "PROCESSING"},
+    {"from": "SPEAKING", "on": "speech_finished", "to": "IDLE"},
+    {"from": "SPEAKING", "on": "barge_in", "to": "LISTENING"},
+    {"from": "ERROR", "on": "error_acknowledged", "to": "IDLE"},
+    {"from": "CANCELLED", "on": "cancel_completed", "to": "IDLE"},
+    {"from": "OFFLINE", "on": "service_restored", "to": "IDLE"}
+  ],
+  "cancellable_from": ["ACTIVATED", "LISTENING", "PROCESSING", "EXECUTING", "AWAITING_CONFIRMATION", "SPEAKING"],
+  "global": [
+    {"on": "cancel_requested", "to": "CANCELLED", "only_from": "cancellable_from"},
+    {"on": "failure", "to": "ERROR", "except_from": ["BOOTING"]},
+    {"on": "service_lost", "to": "OFFLINE"}
+  ],
+  "visual_pulses": ["SUCCESS", "ERROR"],
+  "processing_substages": ["THINKING", "COLLECTING", "ANALYZING", "COMPOSING"]
+}
