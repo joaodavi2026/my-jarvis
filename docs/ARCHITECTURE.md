@@ -1,6 +1,7 @@
 # JARVIS — Arquitetura
 
 > Fonte de requisitos: a especificação do produto JARVIS. Este documento descreve **como** atendê-la.
+> **Shell:** Electron (ADR-0005, que substitui a parte de shell da ADR-0001). O código Tauri está arquivado na branch `feature/tauri-shell`.
 > Status: Phase 1 (design). Nada abaixo da camada de fundações está implementado — veja [ROADMAP](ROADMAP.md).
 
 ## 1. Princípios que guiam as decisões
@@ -17,12 +18,12 @@
 
 ```
 ┌──────────────────────────── Windows (usuário) ────────────────────────────┐
-│  ┌─────────────── Tauri 2 app (SSD) ───────────────┐                      │
-│  │  RUST (shell)              WEBVIEW (React/TS)   │                      │
+│  ┌─────────────── Electron app (SSD) ───────────────┐                      │
+│  │  MAIN (Node/TS shell)       RENDERER (React/TS)   │                      │
 │  │  • lifecycle/autostart     • Orb / HUD / Painel │                      │
 │  │  • tray, janelas, atalho   • Settings           │                      │
 │  │  • supervisor do Python    • Dev console        │                      │
-│  │  • broker IPC (token)  <--Tauri IPC-->  render  │                      │
+│  │  • broker IPC (token)  <-preload API->  render  │                      │
 │  └──────────┬──────────────────────────────────────┘                      │
 │             │ WebSocket 127.0.0.1:<porta dinâmica> + token de sessão      │
 │  ┌──────────▼──────────────── Serviço Python (filho do shell) ───────────┐ │
@@ -35,19 +36,19 @@
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
-A WebView **nunca** fala com o Python diretamente: só com o Rust (Tauri IPC). O token da sessão existe apenas na memória do Rust e do Python.
+A WebView **nunca** fala com o Python diretamente: só com o processo principal do shell (API do preload, sem Node no renderer). O token da sessão existe apenas na memória do Rust e do Python.
 
 ## 3. Fronteiras de responsabilidade
 
 | Camada | É dona de | Não faz |
 |---|---|---|
-| **Rust (Tauri)** | ciclo de vida do app, autostart, system tray, criação/posição/transparência/always-on-top das janelas, atalho global, single-instance, supervisão e reinício do Python, geração do token, cliente WebSocket, persistência de **preferências de janela** (posição do orbe) | lógica de assistente, permissões, tools, IA, acesso a dados do usuário |
+| **Shell (processo principal do Electron, Node/TS)** | ciclo de vida do app, autostart, system tray, criação/posição/transparência/always-on-top das janelas, atalho global, single-instance, supervisão e reinício do Python, geração do token, cliente WebSocket, persistência de **preferências de janela** (posição do orbe) | lógica de assistente, permissões, tools, IA, acesso a dados do usuário |
 | **React/TypeScript** | renderização (orbe, HUD, painel, settings), animações, máquina de estados **visual** derivada de eventos, formulários de configuração, diálogo de confirmação (apenas exibe e devolve a resposta) | decidir o que é permitido, guardar segredos, falar com rede/Python direto |
 | **Python** | tudo que é inteligência e I/O: storage, áudio, STT/TTS, IA, router, harness, skills, **registro único de tools**, permissões, memória, integrações, **estado autoritativo** | janelas/tray/atalho (pedidos chegam como eventos do shell) |
 
 Regras de fronteira:
 - **Uma só política de permissão e um só `ToolRegistry`** (Python). Tools nativas do Windows (abrir app, volume, screenshot) são tools Python; o Rust só expõe capacidades de *shell*.
-- **Estado autoritativo no Python.** A UI mostra `state.changed`; o Rust mantém só `CONNECTING/DOWN` locais quando o serviço está ausente (o orbe sempre tem o que mostrar).
+- **Estado autoritativo no Python.** A UI mostra `state.changed`; o shell mantém só `CONNECTING/DOWN` locais quando o serviço está ausente (o orbe sempre tem o que mostrar).
 - **Contratos compartilhados** ficam em [`contracts/`](../contracts) e são testados dos dois lados (§10).
 
 ## 4. Arquitetura de componentes (serviço Python)
@@ -156,7 +157,7 @@ Cada capacidade registra no `CapabilityGraph` seu estado (`AVAILABLE | DEGRADED 
 | **LLM indisponível** | router determinístico + tools ("volume 30" funciona) | modo básico; sem planejamento |
 | **HD JD ausente (`STORAGE_DEGRADED`)** | orbe, UI, configurações, tools básicas, diagnóstico, reconexão | recursos dependentes devolvem `STORAGE_UNAVAILABLE`; **não** recria memória no SSD nem baixa modelos nele |
 | **HD volta (hot reconnect)** | revalida identidade, reabre bancos/índices, restaura serviços sem reiniciar | "Armazenamento restaurado." |
-| **Python caiu** | o Rust mostra orbe `OFFLINE`, tray e menu; reinicia o serviço com backoff | "Reiniciando serviço…" |
+| **Python caiu** | o shell mostra orbe `OFFLINE`, tray e menu; reinicia o serviço com backoff | "Reiniciando serviço…" |
 
 Falha de dependência externa: *timeouts*, *retry com backoff* apenas se idempotente, *circuit breaker* por provider, mensagens compreensíveis.
 
@@ -173,8 +174,8 @@ O `StorageManager` é a única fonte de caminhos; categorias tipadas (`CORE, CON
 Resumo; comparação completa em [ADR-0002](adr/0002-ipc-transport.md):
 
 - **Transporte:** WebSocket em `127.0.0.1`, porta efêmera (bind na porta 0), nunca `0.0.0.0`.
-- **Quem conecta:** só o Rust. A WebView usa Tauri IPC.
-- **Autenticação:** token aleatório de 256 bits gerado pelo Rust a cada execução, entregue ao filho pelo **stdin** (não por argv, ambiente ou arquivo), nunca persistido. A primeira mensagem do cliente deve ser `hello{token}` em até 2 s (comparação em tempo constante). Conexões com cabeçalho `Origin` são rejeitadas, e só uma conexão ativa é aceita.
+- **Quem conecta:** só o processo principal do shell. O renderer usa a API do preload (IPC do Electron).
+- **Autenticação:** token aleatório de 256 bits gerado pelo shell a cada execução, entregue ao filho pelo **stdin** (não por argv, ambiente ou arquivo), nunca persistido. A primeira mensagem do cliente deve ser `hello{token}` em até 2 s (comparação em tempo constante). Conexões com cabeçalho `Origin` são rejeitadas, e só uma conexão ativa é aceita.
 - **Protocolo:** envelope JSON versionado `{v, id, kind: req|res|evt, type, payload}`; `req/res` correlacionados por `id`; `evt` unidirecional; heartbeat.
 - **Áudio não trafega no IPC:** o Python captura o microfone; à UI vai só o nível (~20 Hz).
 
@@ -184,9 +185,9 @@ Resumo; comparação completa em [ADR-0002](adr/0002-ipc-transport.md):
 |---|---|---|
 | Unidade (Python) | pytest (+ pytest-asyncio) | storage, máquina de estados, permissões, router, parsing, criptografia |
 | Unidade (TS) | Vitest | reducer do estado visual, mapeamento evento → visual |
-| Unidade (Rust) | `cargo test` | supervisor, protocolo/handshake, token |
+| Unidade (shell) | Vitest (Node) | supervisor, cliente IPC, protocolo, posicionamento, preferências |
 | Contrato | testes que leem `contracts/*` nos 3 lados | transições de estado e catálogo de eventos idênticos |
-| Integração | Python + Rust (WebSocket real em loopback) | handshake, rejeição de cliente sem token, reconexão |
+| Ponta a ponta | Electron real + serviço Python real | handshake, rejeição de cliente sem token, reconexão |
 | Fakes/mocks | `FakeVolumeProvider`, `FakeAIProvider`, `FakeSTT/TTS`, `FakeClock` | **sem rede, sem API paga, sem desconectar o HD** |
 | Segurança | testes de política e injeção | conteúdo externo nunca autoriza ação; confirmação vinculada a hash; fail-closed |
 | Manuais | roteiro documentado | orbe/tray reais, HD físico, microfone |
@@ -198,9 +199,9 @@ Todo bug de segurança ganha teste de regressão. Cada relatório de fase separa
 ```
 my-jarvis/
 ├─ contracts/        state-machine.json · event-catalog.md · protocol.md (fonte compartilhada)
-├─ app/              Tauri 2
+├─ app/              Electron + React/TS
 │  ├─ src/           React/TS: orb/ hud/ panel/ settings/ devconsole/ state/ ipc/
-│  └─ src-tauri/src/ lifecycle · tray · windows · supervisor · ipc_client · commands
+│  └─ electron/      main · preload · windows · menus · supervisor · ipcClient · launch · prefs
 ├─ service/          Python
 │  ├─ pyproject.toml
 │  ├─ src/jarvis/    core/ ipc/ storage/ security/ audio/ speech/ ai/ router/ harness/

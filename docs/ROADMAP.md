@@ -8,7 +8,7 @@ Cada fase só é considerada concluída com testes escritos para o JARVIS e rela
 | **0** Repository bootstrap | repo, `.gitignore`, estrutura, config template | primeiro push sincronizado ✔ |
 | **1** Architecture & Security Design | ARCHITECTURE, SECURITY, ROADMAP, ADRs, contratos (`contracts/`) | documentos revisados e commitados |
 | **2** StorageManager | identidade por GUID, categorias, normal/degraded, hot reconnect, `FakeVolumeProvider`, escrita atômica, testes | suíte de cenários do ADR-0003 verde |
-| **3** Tauri Desktop Shell | app Tauri 2, tray, ciclo de vida, single-instance, janelas | executa; tray e fechar-sem-encerrar validados manualmente |
+| **3** Desktop Shell (Electron, ADR-0005) | app Electron, tray, ciclo de vida, single-instance, janelas | executa; tray e fechar-sem-encerrar validados manualmente |
 | **4** Orb / HUD / Visual State Machine | orbe azul neon transparente, estados visuais, interações (clique, menu), posição configurável | reducer testado; validação visual manual |
 | **5** Python Local Service + IPC | serviço mínimo, WebSocket autenticado, event bus, health check, state machine autoritativa | testes de handshake/segurança; shell ↔ serviço funcionando |
 | **6** Audio Infrastructure | captura, dispositivo, nível, VAD | níveis no orbe; CPU em repouso medida |

@@ -1,13 +1,13 @@
-# Protocolo IPC Rust ⇄ Python (v1)
+# Protocolo IPC shell ⇄ Python (v1)
 
 Transporte: WebSocket em `127.0.0.1` (ver [ADR-0002](../docs/adr/0002-ipc-transport.md)). O envelope é independente do transporte.
 
 ## Bootstrap
 
-1. Rust gera token (256 bits, CSPRNG) e inicia o serviço Python.
-2. Rust escreve o token no **stdin** do filho (uma linha) e **mantém o stdin aberto**: se o Rust morrer ou fechar o stdin (EOF), o serviço encerra sozinho (sem processo órfão).
+1. O shell (Electron, processo principal) gera o token (256 bits, CSPRNG) e inicia o serviço Python.
+2. O shell escreve o token no **stdin** do filho (uma linha) e **mantém o stdin aberto**: se o shell morrer ou fechar o stdin (EOF), o serviço encerra sozinho (sem processo órfão).
 3. O serviço liga em `127.0.0.1:0` e escreve em **stdout** uma linha JSON: `{"ready":true,"port":<n>,"protocol":1}`. O token nunca é impresso.
-4. Rust conecta em `ws://127.0.0.1:<port>/` **sem** cabeçalho `Origin`.
+4. O shell conecta em `ws://127.0.0.1:<port>/` **sem** cabeçalho `Origin`.
 
 ## Handshake
 

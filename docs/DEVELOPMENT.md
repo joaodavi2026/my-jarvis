@@ -2,14 +2,13 @@
 
 ## Pré-requisitos (Windows 10/11)
 
-Node 20+, Rust (toolchain MSVC) + VS Build Tools, WebView2, Python 3.13, Git. Nenhuma dependência de IA é necessária nas fases iniciais.
+Node 20+, Python 3.13, Git. O shell é Electron, então Rust e MSVC não são necessários. Nenhuma dependência de IA é necessária nas fases iniciais.
 
 ## Caminhos
 
 - **Código:** `D:\JARVIS\Source\my-jarvis` (este repositório). Detectado pelo build/projeto, nunca fixo no código.
 - **Runtime/dados pesados:** `JARVIS_STORAGE_ROOT` (hoje `D:\JARVIS`). Nunca versionado.
 - **SSD (core/bootstrap/config crítica):** `%LOCALAPPDATA%\JARVIS`.
-- **Build Rust:** defina `CARGO_TARGET_DIR=%LOCALAPPDATA%\JARVIS\build\target` (o exFAT não suporta hard links e é lento).
 
 ## Convenções
 
@@ -22,7 +21,7 @@ Node 20+, Rust (toolchain MSVC) + VS Build Tools, WebView2, Python 3.13, Git. Ne
 
 ## Execução e testes
 
-Os comandos concretos são adicionados junto de cada fase (Python: `pytest`; TS: `vitest`; Rust: `cargo test`).
+Python: `service/.venv` e `pytest`. Frontend e shell: em `app`, `npm run typecheck` e `npm test`. Ponta a ponta (Electron e Python reais): `npm run build` e depois `npm run test:e2e`. Abrir o app: `npm start`.
 
 ## Python (serviço)
 
@@ -44,3 +43,10 @@ Em máquinas com o **Smart App Control** ativo, o Windows pode impedir o `rustc.
 ## Serviço Python (Phase 5)
 
 `python -m jarvis` (executar a partir de `service/src`, ou com `PYTHONPATH`): lê o token da primeira linha do stdin, imprime uma linha JSON `{"ready":true,"port":N,"protocol":1}` no stdout e encerra quando o stdin fecha. Dependência de runtime: `websockets` (BSD-3, local, sem custo/API key).
+
+## Electron sob Smart App Control (ADR-0005)
+
+O SAC bloqueia qualquer executável novo e sem assinatura confiável (provado com um hello.exe compilado pelo cl.exe da Microsoft). Por isso:
+- usar o electron.exe oficial, sem modificações, com a versão fixada (electron 41.7.1); renomeá-lo é permitido (mesmo hash), editá-lo (ícone ou recursos) não;
+- não usar módulos nativos do Node que precisem compilar; o trabalho nativo fica no serviço Python;
+- o app só compila TypeScript (tsc) e empacota com Vite; não há binários novos.

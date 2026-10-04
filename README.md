@@ -16,7 +16,7 @@ integrações Google e memória — com privacidade e custo operacional próximo
 ## Estrutura
 
 ```
-app/       Tauri 2 + React + TypeScript (orbe, HUD, painel, tray, ciclo de vida)
+app/       Electron + React + TypeScript (orbe, HUD, painel, tray, ciclo de vida)
 service/   Serviço Python (storage, IPC, e futuramente STT/TTS/IA/Skills)
 config/    config.example.json (template; config real não é versionada)
 docs/      ARCHITECTURE, SECURITY, ROADMAP, DEVELOPMENT, ADRs
