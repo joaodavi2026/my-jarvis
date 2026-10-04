@@ -1,0 +1,82 @@
+# ── Secrets / credentials (NEVER commit) ─────────────────────────
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+tokens/
+*.key
+*.pem
+*.pfx
+*.p12
+*.token
+client_secret*.json
+token*.json
+*.dpapi
+master.key*
+
+# ── User/machine configuration (template is config/config.example.json) ──
+config/config.json
+config/*.local.json
+*.local.json
+
+# ── JARVIS runtime data (lives in JARVIS_STORAGE_ROOT, never in the repo) ──
+/Models/
+/Memory/
+/PersonalData/
+/Documents/
+/Knowledge/
+/Cache/
+/Logs/
+/Temp/
+/Backups/
+/Downloads/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.log
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.gguf
+*.safetensors
+*.onnx
+*.gguf.part
+*.bin
+/screenshots/
+/captures/
+/recordings/
+
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── Node / frontend ──────────────────────────────────────────────
+node_modules/
+app/dist/
+app/build/
+*.tsbuildinfo
+
+# ── Rust / Tauri ─────────────────────────────────────────────────
+target/
+app/src-tauri/gen/
+
+# ── IDE / OS ─────────────────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
