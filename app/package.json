@@ -5,24 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build && npm run build:electron",
+    "build:electron": "tsc -p tsconfig.electron.json && node scripts/post-build-electron.mjs",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "test": "vitest run",
-    "tauri": "tauri"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "start": "npm run build && electron ."
   },
   "dependencies": {
-    "@tauri-apps/api": "^2",
     "react": "^19",
     "react-dom": "^19"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
     "@types/node": "^20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5",
+    "electron": "41.7.1",
     "typescript": "~5.9",
     "vite": "^7",
     "vitest": "^3"
-  }
+  },
+  "main": "dist-electron/main.js"
 }

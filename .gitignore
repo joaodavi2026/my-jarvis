@@ -80,3 +80,4 @@ app/src-tauri/gen/
 Thumbs.db
 desktop.ini
 $RECYCLE.BIN/
+app/dist-electron/
