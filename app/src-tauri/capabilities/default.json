@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions for the orb and panel windows. No filesystem, shell or network access from the webview.",
+  "windows": ["orb", "panel"],
+  "permissions": [
+    "core:event:default",
+    "core:window:allow-start-dragging"
+  ]
+}
