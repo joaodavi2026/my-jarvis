@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
 from .core.events import Event, EventBus
 from .core.state import InteractionMachine
 from .health import HealthService
+from .ipc.protocol import Envelope
 from .ipc.server import IpcServer
 from .storage import StorageEvent, StorageManager, StorageMonitor, StorageStatus, VolumeProvider
 
@@ -41,6 +43,9 @@ class ServiceApp:
         self.ipc.register("state.get", lambda _req: {"state": self.machine.state})
         self.ipc.register("health.get", lambda _req: self.health.snapshot())
         self.ipc.register("storage.get", lambda _req: storage_summary(self.storage.status))
+        if os.environ.get("JARVIS_DEV_TOOLS") == "1":
+            # Test hook only: drives the REAL state machine (events still flow bus -> IPC -> UI).
+            self.ipc.register("dev.dispatch_trigger", self._dev_dispatch_trigger)
         self.bus.subscribe("activation.orb_clicked", self._on_orb_clicked)
         self.bus.subscribe("activation.cancelled", self._on_cancelled)
 
@@ -87,3 +92,10 @@ class ServiceApp:
     def _on_cancelled(self, _event: Event) -> None:
         if self.machine.dispatch("cancel_requested"):
             self.machine.dispatch("cancel_completed")
+
+    def _dev_dispatch_trigger(self, request: Envelope) -> dict[str, Any]:
+        trigger = request.payload.get("trigger")
+        if not isinstance(trigger, str):
+            raise ValueError("trigger must be a string")
+        accepted = self.machine.dispatch(trigger)
+        return {"accepted": accepted, "state": self.machine.state}

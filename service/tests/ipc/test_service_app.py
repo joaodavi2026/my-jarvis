@@ -150,3 +150,33 @@ async def test_real_process_rejects_bad_tokens_and_exits_when_none_given(tmp_pat
     proc.stdin.write(b"too-short\n")
     await proc.stdin.drain()
     assert await asyncio.wait_for(proc.wait(), 10) == 2
+
+
+async def test_dev_trigger_hook_is_absent_unless_enabled(running):
+    app, token, _provider, _disk = running
+    ws = await open_authenticated(app.ipc, token)
+    await ws.send(req("dev.dispatch_trigger", "d1", trigger="failure"))
+    reply = json.loads(await asyncio.wait_for(ws.recv(), 3))
+    assert reply["payload"]["ok"] is False and reply["payload"]["error"] == "unsupported"
+    assert app.machine.state == "IDLE"
+
+
+async def test_dev_trigger_hook_drives_the_real_state_machine_when_enabled(tmp_path, monkeypatch):
+    monkeypatch.setenv("JARVIS_DEV_TOOLS", "1")
+    token = secrets.token_hex(32)
+    app = ServiceApp(token=token, internal_root=tmp_path / "ssd", provider=FakeVolumeProvider(), monitor_interval=5)
+    await app.start()
+    try:
+        ws = await open_authenticated(app.ipc, token)
+        await ws.send(req("dev.dispatch_trigger", "d1", trigger="failure"))
+        seen = []
+        while not ({"res", "evt"} <= {m[0] for m in seen}):  # order between response and event is not guaranteed
+            message = json.loads(await asyncio.wait_for(ws.recv(), 3))
+            seen.append((message["kind"], message["type"], message["payload"].get("state")))
+        assert ("evt", "state.changed", "ERROR") in seen
+        assert ("res", "dev.dispatch_trigger", "ERROR") in seen
+        await ws.send(req("dev.dispatch_trigger", "d2", trigger="not_a_trigger"))
+        rejected = json.loads(await asyncio.wait_for(ws.recv(), 3))
+        assert rejected["payload"]["accepted"] is False and rejected["payload"]["state"] == "ERROR"
+    finally:
+        await app.stop()
