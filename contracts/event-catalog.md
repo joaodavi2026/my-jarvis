@@ -32,6 +32,9 @@ Todos podem carregar `correlation_id`. Frequência alta ⇒ fila limitada com de
 - `confirmation.answered` — UI → core — `{id, approved}`
 - `tool.started` / `tool.completed` / `tool.failed` **UI** — `{tool, label, verified?}`
 
+## Feedback visual
+- `feedback.pulse` **UI** — `{kind: SUCCESS|ERROR}` — pulso transitório do orbe (não é um estado)
+
 ## Privacidade
 - `privacy.changed` **UI** — `{microphone, camera, screen, cloud}` (booleanos de atividade)
 
@@ -44,6 +47,9 @@ Todos podem carregar `correlation_id`. Frequência alta ⇒ fila limitada com de
 
 ## Shell → core
 - `shell.window_moved`, `shell.menu_action {action}`, `shell.quit_requested`
+
+## Internos do IPC
+- `ipc.client_connected` / `ipc.client_disconnected` (não encaminhados à UI)
 
 ## Reservados (fases futuras)
 `presence.*`, `context.opportunity`, `attention.item`, `briefing.*`, `memory.*`, `task.*`, `integration.*`.
