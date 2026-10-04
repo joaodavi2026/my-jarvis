@@ -15,8 +15,11 @@ function OrbApp() {
   const [model, dispatch] = useAppModel();
   const visual = deriveVisual(model);
   const flow = useRef<(() => void) | null>(null);
-  const start = useRef<PointerStart | null>(null);
+  const start = useRef<(PointerStart & { screenX: number; screenY: number }) | null>(null);
   const dragging = useRef(false);
+
+  // Report what is actually rendered; the end-to-end milestone test observes this.
+  useEffect(() => bridge.reportVisual(visual), [visual]);
 
   const stopFlow = () => {
     flow.current?.();
@@ -51,39 +54,36 @@ function OrbApp() {
     [activate, cancel],
   );
 
-  useEffect(() => {
-    let off: (() => void) | undefined;
-    let disposed = false;
-    bridge
-      .onMenu((action) => {
+  useEffect(
+    () =>
+      bridge.onMenu((action) => {
         if (action === "activate") perform("activate");
         else if (action === "mute") dispatch({ type: "muted", muted: !model.muted });
         else if (action === "simulator") dispatch({ type: "source", source: model.source === "simulated" ? "service" : "simulated" });
-      })
-      .then((fn) => (disposed ? fn() : (off = fn)));
-    return () => {
-      disposed = true;
-      off?.();
-    };
-  }, [perform, dispatch, model.muted, model.source]);
+      }),
+    [perform, dispatch, model.muted, model.source],
+  );
 
   const onPointerDown = (e: PointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
-    start.current = { x: e.clientX, y: e.clientY };
+    start.current = { x: e.clientX, y: e.clientY, screenX: e.screenX, screenY: e.screenY };
     dragging.current = false;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: PointerEvent<HTMLElement>) => {
-    if (!start.current || dragging.current) return;
+    if (!start.current) return;
+    if (dragging.current) return bridge.dragMove(e.screenX, e.screenY);
     if (isDrag(start.current, e.clientX, e.clientY)) {
       dragging.current = true;
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      void bridge.startDragging();
+      bridge.dragStart(start.current.screenX, start.current.screenY);
+      bridge.dragMove(e.screenX, e.screenY);
     }
   };
   const onPointerUp = (e: PointerEvent<HTMLElement>) => {
     const wasClick = start.current !== null && !dragging.current && e.button === 0;
+    if (dragging.current) bridge.dragEnd();
     start.current = null;
+    dragging.current = false;
     if (wasClick) perform(clickAction(visual));
   };
 

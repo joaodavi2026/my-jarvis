@@ -25,7 +25,7 @@ function PanelApp() {
   // The panel and the orb are separate windows: actions are broadcast so both reduce the same stream.
   const act = (a: Parameters<typeof dispatch>[0]) => {
     dispatch(a);
-    void bridge.broadcastAction(a);
+    bridge.broadcastAction(a);
   };
   const goto = (target: VisualState) => {
     act({ type: "source", source: "simulated" });
@@ -71,7 +71,7 @@ function PanelApp() {
             <h2>Fluxos</h2>
             <div className="grid">
               {(["voice", "tool", "confirm", "briefing", "error"] as FlowName[]).map((f) => (
-                <button key={f} onClick={() => void bridge.broadcastAction({ type: "trigger", trigger: `__flow:${f}` })}>
+                <button key={f} onClick={() => bridge.broadcastAction({ type: "trigger", trigger: `__flow:${f}` })}>
                   {f}
                 </button>
               ))}

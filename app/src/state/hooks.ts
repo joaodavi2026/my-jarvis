@@ -19,10 +19,7 @@ export function useAppModel(): [AppModel, (a: Action) => void] {
     if (params.get("sim") === "1") dispatch({ type: "source", source: "simulated" });
 
     const cleanups: Array<() => void> = [];
-    let disposed = false;
-    const keep = (p: Promise<() => void>) => p.then((off) => (disposed ? off() : cleanups.push(off)));
-
-    keep(
+    cleanups.push(
       bridge.onBackendEvent((e) => {
         if (modelRef.current.source !== "service") return;
         const action = toAction(e);
@@ -31,7 +28,7 @@ export function useAppModel(): [AppModel, (a: Action) => void] {
     );
     let stopFlow: (() => void) | null = null;
     const FLOW_PREFIX = "__flow:";
-    keep(
+    cleanups.push(
       bridge.onAction((a) => {
         // The panel asks every window to play a simulator flow locally (dev only).
         if (a.type === "trigger" && a.trigger.startsWith(FLOW_PREFIX)) {
@@ -42,10 +39,8 @@ export function useAppModel(): [AppModel, (a: Action) => void] {
         dispatch(a);
       }),
     );
-    return () => {
-      disposed = true;
-      cleanups.forEach((off) => off());
-    };
+    bridge.requestSync(); // replay the current service status/state to this window
+    return () => cleanups.forEach((off) => off());
   }, []);
 
   // SUCCESS / ERROR pulses are transient: clear them so the orb returns to IDLE.

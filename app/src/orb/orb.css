@@ -22,6 +22,7 @@
 }
 .orb-core {
   all: unset; box-sizing: border-box; cursor: pointer;
+  grid-area: 1 / 1; display: block; /* `all: unset` resets both; keep the core centred in the grid */
   width: 64px; height: 64px; border-radius: 50%;
   position: relative; overflow: hidden;
   background: radial-gradient(circle at 35% 30%, var(--c2) 0%, var(--c1) 45%, var(--blue-deep) 100%);
