@@ -18,9 +18,12 @@ def main() -> int:
         return 2
     if device is not None:
         sd.default.device = (device, sd.default.device[1])
+    import sys
+
     from openjarvis.cli import main as jarvis_main
 
-    jarvis_main(args=["chat", "--voice"], prog_name="jarvis", standalone_mode=False)
+    sys.argv = ["jarvis", "chat", "--voice"]  # openjarvis.cli.main() takes no arguments; it reads sys.argv
+    jarvis_main()
     return 0
 
 
