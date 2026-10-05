@@ -50,5 +50,12 @@ export function useAppModel(): [AppModel, (a: Action) => void] {
     return () => clearTimeout(id);
   }, [model.pulse]);
 
+  // A notice is transient too: it disappears after a few seconds.
+  useEffect(() => {
+    if (!model.notice) return;
+    const id = setTimeout(() => dispatch({ type: "notice", text: null }), 4500);
+    return () => clearTimeout(id);
+  }, [model.notice]);
+
   return [model, dispatch];
 }

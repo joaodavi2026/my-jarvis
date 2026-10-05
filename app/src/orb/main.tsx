@@ -95,6 +95,7 @@ function OrbApp() {
       muted={model.muted}
       privacy={model.privacy}
       storageDegraded={model.storageDegraded}
+      notice={model.notice}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

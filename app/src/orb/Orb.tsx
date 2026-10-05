@@ -8,6 +8,7 @@ interface Props {
   muted: boolean;
   privacy: Privacy;
   storageDegraded: boolean;
+  notice: string | null;
   onPointerDown: (e: PointerEvent<HTMLElement>) => void;
   onPointerMove: (e: PointerEvent<HTMLElement>) => void;
   onPointerUp: (e: PointerEvent<HTMLElement>) => void;
@@ -37,6 +38,7 @@ export function Orb(p: Props) {
       >
         <span className="orb-shine" />
       </button>
+      {p.notice && <div className="orb-caption" role="status">{p.notice}</div>}
       {p.badge && <span className="orb-badge" title="Há algo para você" />}
       {p.privacy.microphone && <span className="orb-dot dot-mic" title="Microfone ativo" />}
       {p.privacy.camera && <span className="orb-dot dot-cam" title="Câmera ativa" />}

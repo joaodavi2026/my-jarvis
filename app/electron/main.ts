@@ -168,6 +168,26 @@ async function connectToService(info: ReadyInfo): Promise<void> {
   if (lastStorage) emitBackend("storage.status_changed", lastStorage);
   if (lastState) emitBackend("state.changed", lastState);
   if (process.env.JARVIS_E2E_SCRIPT === "1") void runE2eScript(client);
+  if (process.env.JARVIS_E2E_CLICK === "1") setTimeout(() => void clickOrbForTest(), 1500);
+}
+
+// Test-only: a real mouse click (down+up) at the centre of the orb, delivered through Chromium input.
+async function clickOrbForTest(): Promise<void> {
+  if (!orb) return;
+  trace("test_click", { visual: lastVisual });
+  const at = { x: 80, y: 80, button: "left" as const, clickCount: 1 };
+  orb.webContents.sendInputEvent({ type: "mouseMove", x: 80, y: 80 });
+  orb.webContents.sendInputEvent({ type: "mouseDown", ...at });
+  orb.webContents.sendInputEvent({ type: "mouseUp", ...at });
+  const dir = process.env.JARVIS_E2E_CLICK_SNAPSHOT_DIR;
+  if (dir) {
+    await new Promise((r) => setTimeout(r, 500));
+    fs.mkdirSync(dir, { recursive: true });
+    await orb.webContents.executeJavaScript("document.body.style.background = '#0b1220'");
+    fs.writeFileSync(path.join(dir, "orb-after-click.png"), (await orb.webContents.capturePage()).toPNG());
+  }
+  await new Promise((r) => setTimeout(r, 2500));
+  if (process.env.JARVIS_E2E_AUTOQUIT === "1") void shutdown("click-test");
 }
 
 function waitForVisual(state: string, timeoutMs: number): Promise<void> {

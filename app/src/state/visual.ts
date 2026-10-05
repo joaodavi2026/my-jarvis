@@ -36,6 +36,7 @@ export interface AppModel {
   privacy: Privacy;
   storageDegraded: boolean;
   label: string; // short operational text from real events (never invented)
+  notice: string | null; // transient message from a real event (e.g. error.occurred), shown under the orb
 }
 
 export const initialModel: AppModel = {
@@ -50,6 +51,7 @@ export const initialModel: AppModel = {
   privacy: { microphone: false, camera: false, screen: false, cloud: false },
   storageDegraded: false,
   label: "",
+  notice: null,
 };
 
 /** The orb shows only what the real state says. Pulses overlay IDLE only. */

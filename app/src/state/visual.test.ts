@@ -79,6 +79,12 @@ describe("reducer", () => {
     expect(deriveVisual(m)).toBe("OFFLINE");
   });
 
+  it("stores and clears a notice", () => {
+    const shown = reducer(connected({}), { type: "notice", text: "Sem áudio ainda" });
+    expect(shown.notice).toBe("Sem áudio ainda");
+    expect(reducer(shown, { type: "notice", text: null }).notice).toBeNull();
+  });
+
   it("merges privacy indicators", () => {
     const m = reducer(connected({}), { type: "privacy", privacy: { microphone: true } });
     expect(m.privacy).toEqual({ microphone: true, camera: false, screen: false, cloud: false });

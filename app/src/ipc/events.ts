@@ -29,6 +29,8 @@ export function toAction(e: BackendEvent): Action | null {
       return isObject(p) ? { type: "privacy", privacy: pickPrivacy(p) } : null;
     case "storage.status_changed":
       return { type: "storage", degraded: p.mode === "DEGRADED" || p.mode === "STORAGE_DEGRADED" };
+    case "error.occurred":
+      return typeof p.message === "string" && p.message.trim() ? { type: "notice", text: p.message.trim().slice(0, 120) } : null;
     case "feedback.pulse":
       return p.kind === "SUCCESS" || p.kind === "ERROR" ? { type: "pulse", pulse: p.kind } : null;
     case "service.status":

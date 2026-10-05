@@ -13,6 +13,7 @@ export type Action =
   | { type: "storage"; degraded: boolean }
   | { type: "muted"; muted: boolean }
   | { type: "badge"; badge: boolean }
+  | { type: "notice"; text: string | null }
   | { type: "source"; source: AppModel["source"] };
 
 export function reducer(m: AppModel, a: Action): AppModel {
@@ -45,6 +46,8 @@ export function reducer(m: AppModel, a: Action): AppModel {
       return { ...m, muted: a.muted };
     case "badge":
       return { ...m, badge: a.badge };
+    case "notice":
+      return { ...m, notice: a.text };
     case "source":
       return a.source === "simulated"
         ? { ...initialModel, source: "simulated", service: "CONNECTED", interaction: "IDLE" }

@@ -31,6 +31,12 @@ describe("toAction", () => {
     expect(toAction({ type: "service.status", payload: { status: "DOWN" } })).toEqual({ type: "service", status: "DOWN" });
   });
 
+  it("turns error.occurred into a transient notice using the real message", () => {
+    expect(toAction({ type: "error.occurred", payload: { code: "audio_unavailable", message: "  Sem áudio ainda  " } })).toEqual({ type: "notice", text: "Sem áudio ainda" });
+    expect(toAction({ type: "error.occurred", payload: { code: "x" } })).toBeNull();
+    expect(toAction({ type: "error.occurred", payload: { message: "a".repeat(500) } })).toMatchObject({ text: "a".repeat(120) });
+  });
+
   it("ignores events the UI does not render", () => {
     expect(toAction({ type: "router.matched" })).toBeNull();
   });

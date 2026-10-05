@@ -88,4 +88,18 @@ describe("JARVIS milestone: Windows -> Electron shell -> orb -> Python -> IPC ->
     expect(trace.some((l) => l.ev === "visual" && l.state === "LISTENING")).toBe(false);
     expect(code).toBe(0);
   });
+
+  it("a real click on the orb reaches the service and gives visible feedback (no pretending to listen)", async () => {
+    const app = start({ JARVIS_E2E_CLICK: "1", JARVIS_E2E_AUTOQUIT: "1" });
+    const code = await Promise.race([app.exited, new Promise<null>((r) => setTimeout(() => r(null), 100_000))]);
+    const trace = app.trace();
+    expect(trace.find((l) => l.ev === "test_click")?.visual).toBe("IDLE");
+    const fromService = trace.filter((l) => l.ev === "event_from_service").map((l) => l.type);
+    expect(fromService).toContain("error.occurred");
+    expect(fromService).toContain("feedback.pulse");
+    const visuals = trace.filter((l) => l.ev === "visual").map((l) => l.state);
+    expect(visuals.slice(visuals.indexOf("IDLE"))).toEqual(["IDLE", "ERROR", "IDLE"]);
+    expect(visuals).not.toContain("LISTENING"); // there is no microphone yet
+    expect(code).toBe(0);
+  });
 });

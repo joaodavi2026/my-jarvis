@@ -59,6 +59,14 @@
 .dot-cam { background: #ff5d5d; box-shadow: 0 0 6px #ff5d5d; margin-left: 18px; }
 .dot-storage { background: var(--amber); box-shadow: 0 0 6px var(--amber); margin-bottom: 30px; }
 
+.orb-caption {
+  align-self: end; justify-self: center; margin-bottom: 4px; max-width: 148px; box-sizing: border-box;
+  padding: 3px 8px; border-radius: 10px; font-size: 10.5px; line-height: 1.25; text-align: center; color: #d8f1ff;
+  background: rgba(8, 18, 36, 0.88); border: 1px solid rgba(26, 167, 255, 0.5); pointer-events: none;
+  animation: caption-in 180ms ease-out;
+}
+@keyframes caption-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
 /* ── states ───────────────────────────────────────────── */
 [data-state="STARTING"] .orb-halo { opacity: 0.25; animation-duration: 2.4s; }
 [data-state="STARTING"] .orb-core { filter: saturate(0.6) brightness(0.8); }
