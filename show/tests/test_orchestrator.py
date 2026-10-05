@@ -10,7 +10,8 @@ OLLAMA_PING = OLLAMA + "/api/version"
 
 
 class Fake:
-    def __init__(self, up=None, comes_up=None, jingle_error=False):
+    def __init__(self, up=None, comes_up=None, jingle_error=False, browser_opens=True):
+        self.browser_opens = browser_opens
         self.calls = []
         self.up = set(up or [])
         self.comes_up = comes_up or {}  # url -> polls before it answers once started
@@ -32,6 +33,10 @@ class Fake:
                 return self.polls[url] > self.comes_up[url]
             return False
 
+        def open_browser(url):
+            self.calls.append("browser")
+            return self.browser_opens
+
         def advance(seconds):
             self.clock += seconds
 
@@ -40,7 +45,7 @@ class Fake:
             http_ok=http_ok,
             start_ollama=lambda: self.calls.append("start_ollama"),
             start_server=lambda: self.calls.append("start_server"),
-            open_browser=lambda url: self.calls.append("browser"),
+            open_browser=open_browser,
             start_voice_chat=lambda: self.calls.append("voice_chat"),
             sleep=advance,
             now=lambda: self.clock,
@@ -106,3 +111,17 @@ def test_no_browser_option():
     fake = Fake(up={OLLAMA_PING, URL})
     steps = make(fake, open_browser=False).activate()
     assert "browser" not in steps
+
+
+def test_browser_that_was_recently_opened_by_another_run_is_reported_as_skipped():
+    fake = Fake(up={OLLAMA_PING, URL}, browser_opens=False)
+    steps = make(fake).activate()
+    assert "browser_skipped" in steps and "browser" not in steps
+
+
+def test_normal_mode_has_no_voice_chat_step():
+    fake = Fake(up={OLLAMA_PING, URL})
+    actions = fake.actions()
+    actions.start_voice_chat = None
+    steps = Orchestrator(None, URL, OLLAMA, actions).activate()
+    assert "voice_chat" not in steps and steps[-1] == "browser"

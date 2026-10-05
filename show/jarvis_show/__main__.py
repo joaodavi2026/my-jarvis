@@ -26,7 +26,7 @@ def build_orchestrator(s: Settings, open_browser: bool, voice: bool = True, jing
         start_ollama=system.start_ollama,
         start_server=lambda: system.start_server(s.openjarvis_dir),
         open_browser=system.open_browser,
-        start_voice_chat=system.start_voice_chat if voice else (lambda: None),
+        start_voice_chat=system.start_voice_chat if voice else None,
     )
     return Orchestrator(s.jingle if jingle else None, s.url, s.ollama_url, actions, open_browser=open_browser)
 

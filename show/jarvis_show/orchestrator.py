@@ -20,8 +20,8 @@ class Actions:
     http_ok: Callable[[str], bool]
     start_ollama: Callable[[], None]
     start_server: Callable[[], None]
-    open_browser: Callable[[str], None]
-    start_voice_chat: Callable[[], None]
+    open_browser: Callable[[str], bool]  # returns False when it deliberately did not open a tab
+    start_voice_chat: Callable[[], None] | None  # None = normal mode (no voice chat)
     sleep: Callable[[float], None] = time.sleep
     now: Callable[[], float] = time.monotonic
 
@@ -60,14 +60,14 @@ class Orchestrator:
         if self._ensure(self.url, a.start_server):
             steps.append("server_ok")
             if self.open_browser and a.now() - self._last_browser >= self.browser_debounce_s:
-                a.open_browser(self.url)
                 self._last_browser = a.now()
-                steps.append("browser")
+                steps.append("browser" if a.open_browser(self.url) else "browser_skipped")
         else:
             steps.append("server_unavailable")  # the voice chat still works without the web UI
 
-        a.start_voice_chat()
-        steps.append("voice_chat")
+        if a.start_voice_chat is not None:
+            a.start_voice_chat()
+            steps.append("voice_chat")
         return steps
 
     def _ensure(self, url: str, start: Callable[[], None]) -> bool:

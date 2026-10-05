@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 import webbrowser
 from pathlib import Path
@@ -42,8 +43,20 @@ def start_server(openjarvis_dir: Path) -> None:
     subprocess.Popen([uv, "run", "jarvis", "start"], cwd=str(openjarvis_dir), creationflags=DETACHED, stdout=log, stderr=log)
 
 
-def open_browser(url: str) -> None:
+def open_browser(url: str, window_s: float = 120.0, marker: Path | None = None) -> bool:
+    """Opens the interface in the default browser, at most once per window, even across separate jarvis-show runs."""
+    marker = marker or Path(tempfile.gettempdir()) / "jarvis-show-browser.stamp"
+    try:
+        if time.time() - marker.stat().st_mtime < window_s:
+            return False
+    except OSError:
+        pass
     webbrowser.open(url)
+    try:
+        marker.touch()
+    except OSError:
+        pass
+    return True
 
 
 def start_voice_chat() -> None:
