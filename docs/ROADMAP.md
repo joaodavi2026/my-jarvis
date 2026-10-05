@@ -26,6 +26,10 @@ Cada fase só é considerada concluída com testes escritos para o JARVIS e rela
 | **18** Health/Fitness providers | `PersonalDataProvider`, baseline, post-workout | sem diagnóstico; estatística determinística |
 | **19** Hardening, packaging, optimization | instalador (core no SSD), perfis de CPU/RAM, auditoria de segurança | métricas de idle atingidas |
 
+## Atualização (2026-10-05, ADR-0007)
+
+As fases 6 a 10 (áudio, STT, wake word/palmas, TTS, provider de IA, router) passam a usar o **OpenJarvis** como motor (faster-whisper, Kokoro, Ollama/Gemma), exceto a ativação por palmas, que é o `jarvis-show` (pasta `show/`). A integração do orbe com o servidor do OpenJarvis é uma fase própria. As demais fases (Google, presença, briefings, saúde) seguem como planejado.
+
 ## Escopo imediato
 
 Executar **Fases 0 → 5** e **parar** para revisão antes de áudio, STT/TTS, Ollama ou Agentic Harness.
