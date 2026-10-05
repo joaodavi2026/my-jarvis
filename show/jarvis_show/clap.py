@@ -41,6 +41,15 @@ class ClapDetector:
         self._pending_age = 0
         self._tail_rms: list[float] = []
         self._refractory = 0
+        self._rejections: list[dict] = []
+
+    def required_peak(self) -> float:
+        return max(self.cfg.min_peak, self.cfg.thresh * max(self.noise, 1e-5))
+
+    def pop_rejections(self) -> list[dict]:
+        """Diagnostics: loud sounds that were NOT claps, with the measured values and the reason."""
+        out, self._rejections = self._rejections, []
+        return out
 
     @staticmethod
     def _features(block: np.ndarray) -> tuple[float, float, float, float]:
@@ -73,6 +82,9 @@ class ClapDetector:
             self._pending = (rms, peak)
             self._pending_age = 0
             self._tail_rms = []
+        elif loud:
+            reason = "pouco impulsivo (voz/ruido continuo)" if crest < self.cfg.min_crest else "som grave (batida/voz), pouca energia aguda"
+            self._rejections.append({"reason": reason, "peak": peak, "crest": crest, "hf": hf, "need": self.required_peak()})
         return False
 
     def _advance_candidate(self, rms: float) -> bool:
@@ -83,6 +95,8 @@ class ClapDetector:
             return False
         onset_rms, _ = self._pending
         decayed = max(self._tail_rms[-2:]) < self.cfg.decay_ratio * onset_rms
+        if not decayed:
+            self._rejections.append({"reason": "som nao decaiu rapido (sustentado)", "peak": self._pending[1], "crest": 0.0, "hf": 0.0, "need": self.required_peak()})
         self._pending = None
         self._refractory = self.cfg.refractory_blocks
         return decayed
@@ -102,21 +116,29 @@ class DoubleClapMatcher:
         self.cfg = config or DoubleClapConfig()
         self._first: float | None = None
         self._last_fire = -1e9
+        self.last = ""  # what the last clap did: first | fire | same_event | restart | cooldown
+        self.last_gap = 0.0
 
     def feed(self, t: float) -> bool:
         if t - self._last_fire < self.cfg.cooldown:
+            self.last = "cooldown"
             return False
         if self._first is None:
             self._first = t
+            self.last = "first"
             return False
         gap = t - self._first
+        self.last_gap = gap
         if gap < self.cfg.min_gap:
+            self.last = "same_event"
             return False  # same acoustic event
         if gap <= self.cfg.max_gap:
             self._first = None
             self._last_fire = t
+            self.last = "fire"
             return True
         self._first = t  # too late: this clap starts a new window
+        self.last = "restart"
         return False
 
     def reset(self) -> None:

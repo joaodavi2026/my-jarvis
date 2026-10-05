@@ -8,6 +8,9 @@ from pathlib import Path
 from types import TracebackType
 
 
+LOCK_OFFSET = 4096
+
+
 class AlreadyRunning(RuntimeError):
     pass
 
@@ -22,13 +25,14 @@ class InstanceLock:
 
         self._file = open(self.path, "a+")
         try:
+            self._file.seek(LOCK_OFFSET)  # lock a byte far from the pid text: a locked region cannot be written, even by us
             msvcrt.locking(self._file.fileno(), msvcrt.LK_NBLCK, 1)
         except OSError:
             self._file.close()
             self._file = None
             raise AlreadyRunning("jarvis-show is already running") from None
         self._file.seek(0)
-        self._file.truncate()
+        self._file.truncate(0)
         self._file.write(str(os.getpid()))
         self._file.flush()
         return self
@@ -38,7 +42,7 @@ class InstanceLock:
 
         if self._file is not None:
             try:
-                self._file.seek(0)
+                self._file.seek(LOCK_OFFSET)
                 msvcrt.locking(self._file.fileno(), msvcrt.LK_UNLCK, 1)
             finally:
                 self._file.close()
